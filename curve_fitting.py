@@ -1,148 +1,102 @@
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.special import wofz
-from scipy.integrate import simpson
 
-# === Peak Models ===
-def gaussian(x, A, mu, sigma):
-    return A * np.exp(-(x - mu)**2 / (2 * sigma**2))
+# === Peak Functions ===
+def gaussian(x, amp, cen, wid):
+    return amp * np.exp(-(x - cen)**2 / (2 * wid**2))
 
-def lorentzian(x, A, mu, gamma):
-    return A * gamma**2 / ((x - mu)**2 + gamma**2)
+def lorentzian(x, amp, cen, wid):
+    return amp * (wid**2 / ((x - cen)**2 + wid**2))
 
-def voigt(x, A, mu, sigma, gamma):
-    z = ((x - mu) + 1j * gamma) / (sigma * np.sqrt(2))
-    return A * np.real(wofz(z)) / (sigma * np.sqrt(2 * np.pi))
+def pseudo_voigt(x, amp, cen, wid, eta=0.5):
+    g = gaussian(x, amp, cen, wid)
+    l = lorentzian(x, amp, cen, wid)
+    return eta * l + (1 - eta) * g
 
-model_funcs = {
-    "gaussian": gaussian,
-    "lorentzian": lorentzian,
-    "voigt": voigt
-}
-
-# === Fit Function ===
-def fit_peaks(x_full, y_full, peak_groups, bounds=None, maxfev=20000, auto_bounds=True):
+# === Main Fitting Function ===
+def fit_peaks(x, y, peak_defs, eta=0.5):
     """
-    Fits one or more peak groups to the provided spectrum.
+    Fit mixed model Raman peaks to the given spectrum.
 
     Parameters:
-        x_full (array): Full Raman shift values.
-        y_full (array): Full intensity values.
-        peak_groups (list): List of dicts. Each defines a group:
-            {
-              "model": ["gaussian", "voigt"],
-              "center": [770, 900],
-              "window": 80
-            }
-        bounds (tuple or None): (lower, upper) bounds for parameters.
-        maxfev (int): Maximum number of function evaluations.
+        x (array): Raman shift axis
+        y (array): Intensity values
+        peak_defs (list): List of tuples like (model, amp, center, width)
+        eta (float): Fixed Voigt mixing parameter (default = 0.5)
 
     Returns:
-        tuple: (y_fit_total, fitted_peaks, peak_params)
+        y_fit_total (array)
+        fitted_peaks (list of (x, y) arrays for each peak)
+        peak_params (list of dicts with peak info)
     """
 
-    y_fit_total = np.zeros_like(x_full)
+    # === Build parameter guesses and bounds ===
+    init = []
+    bounds_lower = []
+    bounds_upper = []
+
+    for model, amp, cen, wid in peak_defs:
+        init.extend([amp, cen, wid])
+        bounds_lower.extend([0, cen - 25, 1])
+        bounds_upper.extend([2*amp, cen + 25, 100])
+
+    init.append(0.0)  # offset
+    bounds_lower.append(-0.2)
+    bounds_upper.append(0.2)
+
+    # === Mixed model ===
+    def mixed_model(x, *params):
+        y_total = np.zeros_like(x)
+        for i, (model, _, _, _) in enumerate(peak_defs):
+            amp, cen, wid = params[3*i:3*i+3]
+            if model == "gauss":
+                y_total += gaussian(x, amp, cen, wid)
+            elif model == "lorentz":
+                y_total += lorentzian(x, amp, cen, wid)
+            elif model == "pvoigt":
+                y_total += pseudo_voigt(x, amp, cen, wid, eta)
+            else:
+                raise ValueError(f"[!] Unknown model: {model}")
+        return y_total + params[-1]
+
+    # === Fit ===
+    popt, pcov = curve_fit(
+        mixed_model, x, y,
+        p0=init, bounds=(bounds_lower, bounds_upper),
+        maxfev=200000
+    )
+
+    # === Generate total fit and individual components ===
+    y_fit_total = mixed_model(x, *popt)
     fitted_peaks = []
     peak_params = []
 
-    for i, group in enumerate(peak_groups):
-        is_group = isinstance(group["center"], (list, tuple))
-        centers = group["center"] if is_group else [group["center"]]
-        models = group["model"] if is_group else [group["model"]]
-        window = group["window"]
+    for i, (model, _, _, _) in enumerate(peak_defs):
+        amp, cen, wid = popt[3*i:3*i+3]
+        if model == "gauss":
+            y_peak = gaussian(x, amp, cen, wid)
+            fwhm = 2.3548 * abs(wid)
+            area = amp * wid * np.sqrt(2 * np.pi)
+        elif model == "lorentz":
+            y_peak = lorentzian(x, amp, cen, wid)
+            fwhm = 2 * wid
+            area = amp * np.pi * wid
+        elif model == "pvoigt":
+            y_peak = pseudo_voigt(x, amp, cen, wid, eta)
+            fwhm = 0.5346 * 2 * wid + np.sqrt(0.2166 * (2 * wid)**2 + (2.3548 * wid)**2)
+            area = amp * wid * np.sqrt(2 * np.pi)  # approximate
+        else:
+            raise ValueError(f"[!] Unknown model: {model}")
 
-        x_min = min(centers) - window
-        x_max = max(centers) + window
-        mask = (x_full >= x_min) & (x_full <= x_max)
-        x = x_full[mask]
-        y = y_full[mask]
-
-        # Composite function
-        def composite(x, *params):
-            y_sum = np.zeros_like(x)
-            idx = 0
-            for m in models:
-                if m == "gaussian":
-                    A, mu, sigma = params[idx:idx+3]
-                    y_sum += gaussian(x, A, mu, sigma)
-                    idx += 3
-                elif m == "lorentzian":
-                    A, mu, gamma = params[idx:idx+3]
-                    y_sum += lorentzian(x, A, mu, gamma)
-                    idx += 3
-                elif m == "voigt":
-                    A, mu, sigma, gamma = params[idx:idx+4]
-                    y_sum += voigt(x, A, mu, sigma, gamma)
-                    idx += 4
-            return y_sum
-
-        # Initial guess
-        p0 = []
-        for center, m in zip(centers, models):
-            A0 = max(y)
-            if m == "gaussian":
-                p0 += [A0, center, 10]
-            elif m == "lorentzian":
-                p0 += [A0, center, 10]
-            elif m == "voigt":
-                p0 += [A0, center, 10, 10]
-
-        # Fit
-        try:
-            if auto_bounds:
-                lower, upper = [], []
-                for center, m in zip(centers, models):
-                    if m == "gaussian" or m == "lorentzian":
-                        lower += [0, center - 100, 1]
-                        upper += [np.max(y), center + 100, 100]
-                    elif m == "voigt":
-                        lower += [0, center - 100, 1, 1]
-                        upper += [np.max(y), center + 100, 100, 100]
-                bounds = (lower, upper)
-            popt, _ = curve_fit(composite, x, y, p0=p0, maxfev=maxfev, bounds=bounds or (-np.inf, np.inf))
-            y_fit = composite(x_full, *popt)
-            y_fit_total += y_fit
-            fitted_peaks.append((x_full, y_fit))
-
-            idx = 0
-            for j, m in enumerate(models):
-                row = {
-                    "peak": f"{i+1}.{j+1}" if is_group else f"{i+1}",
-                    "model": m
-                }
-
-                A = popt[idx]
-                mu = popt[idx + 1]
-                row["A"] = A
-                row["mu"] = mu
-
-                if m == "gaussian":
-                    sigma = popt[idx + 2]
-                    fwhm = 2.3548 * sigma
-                    area = A * sigma * np.sqrt(2 * np.pi)
-                    idx += 3
-
-                elif m == "lorentzian":
-                    gamma = popt[idx + 2]
-                    fwhm = 2 * gamma
-                    area = A * np.pi * gamma
-                    idx += 3
-
-                elif m == "voigt":
-                    sigma = popt[idx + 2]
-                    gamma = popt[idx + 3]
-                    fwhm = 0.5346 * 2 * gamma + np.sqrt(0.2166 * (2 * gamma)**2 + (2.3548 * sigma)**2)
-                    peak_y = voigt(x_full, A, mu, sigma, gamma)
-                    area = simpson(peak_y, x_full)
-                    idx += 4
-
-                row["FWHM"] = fwhm
-                row["Area"] = area
-                row["Relative_Intensity"] = A / np.max(y_full)
-
-                peak_params.append(row)
-
-        except Exception as e:
-            print(f"[!] Fit failed for group {i+1}: {e}")
+        fitted_peaks.append((x, y_peak))
+        peak_params.append({
+            "peak": i + 1,
+            "model": model,
+            "mu": cen,
+            "FWHM": fwhm,
+            "Area": area,
+            "Relative_Intensity": amp
+        })
 
     return y_fit_total, fitted_peaks, peak_params
