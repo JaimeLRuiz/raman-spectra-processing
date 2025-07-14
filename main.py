@@ -51,10 +51,10 @@ def main():
 
     # === Peak Definitions ===
     peak_groups = [
-        {"model": "gaussian", "center": 520, "window": 60},
-        {"model": ["gaussian", "gaussian", "gaussian"], "center": [770, 870, 900], "window": 150},
-        {"model": "gaussian", "center": 1400, "window": 60},
-        {"model": "gaussian", "center": 1750, "window": 60},
+        {"model": "voigt", "center": 520, "window": 60},
+        {"model": ["voigt", "voigt", "voigt"], "center": [770, 870, 900], "window": 150},
+        {"model": "voigt", "center": 1400, "window": 60},
+        {"model": "voigt", "center": 1750, "window": 60},
     ]
 
     # === Run Pipeline ===

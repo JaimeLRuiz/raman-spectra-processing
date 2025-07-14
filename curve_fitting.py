@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.special import wofz
-from scipy.integrate import simps
+from scipy.integrate import simpson
 
 # === Peak Models ===
 def gaussian(x, A, mu, sigma):
@@ -133,7 +133,7 @@ def fit_peaks(x_full, y_full, peak_groups, bounds=None, maxfev=20000, auto_bound
                     gamma = popt[idx + 3]
                     fwhm = 0.5346 * 2 * gamma + np.sqrt(0.2166 * (2 * gamma)**2 + (2.3548 * sigma)**2)
                     peak_y = voigt(x_full, A, mu, sigma, gamma)
-                    area = simps(peak_y, x_full)
+                    area = simpson(peak_y, x_full)
                     idx += 4
 
                 row["FWHM"] = fwhm
