@@ -50,6 +50,27 @@ def plot_and_report(x, y, y_fit_total, fitted_peaks, peak_params,
     if show:
         plt.show()
 
+        # === Final labeled plot with staggered wavenumber annotations ===
+    plt.figure(figsize=(12, 6))
+    plt.plot(x, y, color='red', label='Processed Data')
+
+    for i, row in enumerate(peak_params):
+        mu = row["mu"]
+        idx = np.abs(x - mu).argmin()
+        y_offset = max(y) * (0.05 if i % 2 == 0 else 0.1)
+        plt.axvline(x=mu, color='gray', linestyle='--', linewidth=1)
+        plt.text(mu, y_offset, f"{mu:.1f}",
+                 rotation=0, ha='center', va='bottom',
+                 fontsize=9, color='black', fontweight='bold')
+
+    plt.xlabel("Raman Shift (cm⁻¹)")
+    plt.ylabel("Intensity")
+    plt.title("Fitted Peak Centers (Wavenumbers)")
+    plt.grid(True, linestyle="--", alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+
+
     # === Console summary ===
     print("\n--- Fitted Peak Summary ---\n")
     for row in peak_params:
