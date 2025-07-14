@@ -79,7 +79,7 @@ def preprocess(
 
     # === Plot raw vs processed ===
     if plot:
-        plt.figure(figsize=(10, 5))
+        plt.figure(figsize=(12, 6), dpi=120)
         plt.subplot(1, 2, 1)
         rp.plot.spectra(raw_spectrum, title="Raw Spectrum")
         plt.xlabel("Raman Shift (cm⁻¹)")
