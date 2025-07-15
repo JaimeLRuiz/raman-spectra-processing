@@ -11,10 +11,9 @@ from analysis_plotting import plot_and_report
 # === Region Definitions ===
 # Format: (start, end, [ (model, amp, center, width), ... ])
 REGIONS = [
-    (200, 275, [("gauss", 0.1, 200, 5), ("gauss", 0.1, 270, 5)]),
-    (410, 625, [("lorentz", 0.3, 525, 5), ("pvoigt", 0.2, 560, 5)]),
-    (735, 943, [("gauss", 0.45, 780, 4), ("gauss", 0.5, 870, 5), ("pvoigt", 0.6, 910, 5)]),
-    (1300, 1650, [("gauss", 0.6, 1380, 10), ("gauss", 0.6, 1580, 10)]),
+    (420, 570, [("pvoigt", 0.4, 485, 5), ("pvoigt", 0.4, 530, 5)]),
+    (650, 950, [("pvoigt", 0.4, 780, 5), ("pvoigt", 0.4, 850, 5)]),
+    (1300, 1600, [("pvoigt", 1, 1425, 10)])
 ]
 
 # === File Input Handling ===
@@ -50,14 +49,15 @@ def main():
         input_file,
         crop_min=150,
         crop_max=2000,
-        sg_window=11,
-        sg_polyorder=3,
-        imodpoly_order=11,
+        sg_window=31,
+        sg_polyorder=2,
+        imodpoly_order=8,
         imodpoly_tol=1e-3,
-        imodpoly_max_iter=200,
+        imodpoly_max_iter=100,
         normalisation="vector-0to1",
         plot=True,
-        save_path=f"output/{filename}_processed.csv"
+        save_path=f"output/{filename}_processed.csv",
+        alex_data = True
     )
 
     # === Step 2: Region-Based Curve Fitting ===

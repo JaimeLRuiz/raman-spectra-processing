@@ -7,6 +7,10 @@ from ramanspy import preprocessing
 def min_max_normalise_array(arr):
     return (arr - np.min(arr)) / (np.max(arr) - np.min(arr))
 
+def wavelength_to_shift(lambda_nm, lambda_exc_nm):
+    lambda_nm = np.array(lambda_nm, dtype=np.float64)
+    return 1e7 / lambda_exc_nm - 1e7 / lambda_nm
+
 def preprocess(
     input_path,
     crop_min=150,
@@ -18,7 +22,8 @@ def preprocess(
     imodpoly_max_iter=1000,
     normalisation="vector-0to1",
     plot=True,
-    save_path=None
+    save_path=None,
+    alex_data = True
 ):
     """
     Preprocesses a Raman spectrum with denoising, baseline removal, and normalisation.
@@ -32,8 +37,8 @@ def preprocess(
     """
 
     # === Load and clean CSV ===
-    df = pd.read_csv(input_path, encoding="latin1", sep=None, engine="python")
-    df.columns = df.columns.str.strip()
+    df = pd.read_csv(input_path, delim_whitespace=True, header=None)
+    # df.columns = df.columns.str.strip()
     x_col, y_col = df.columns[:2]
 
     df[x_col] = pd.to_numeric(df[x_col], errors="coerce")
@@ -42,9 +47,19 @@ def preprocess(
     df = df[(df[x_col] >= crop_min) & (df[x_col] <= crop_max)]
     df = df.sort_values(by=x_col)
 
+    # Check we are not dealing with empty csv / reading it wrong
+    if df.shape[0] == 0:
+        raise ValueError("[!] Loaded CSV is empty. Check delimiter or file format.")
+
     x_raw = df[x_col].values
     y_raw = df[y_col].values
+
+    if alex_data:
+        excitation_nm = 532
+        x_raw = wavelength_to_shift(x_raw, excitation_nm)
+
     raw_spectrum = rp.Spectrum(y_raw, x_raw)
+
 
     # === Apply preprocessing ===
     denoiser = preprocessing.denoise.SavGol(window_length=sg_window, polyorder=sg_polyorder)
