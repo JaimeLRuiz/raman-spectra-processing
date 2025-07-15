@@ -53,8 +53,7 @@ def pseudo_voigt(x, amp, cen, wid, eta=0.5):
 regions = [
     (150, 400, [("gauss", 0.06, 200, 5), ("gauss", 0.06, 280, 5)]),
     (500, 600, [("pvoigt", 0.06, 525, 5), ("pvoigt", 0.06, 560, 5)]),
-    (750,790, [("pvoigt", 0.04, 770, 5)]),
-    (800, 950, [("gauss", 0.06, 875, 5), ("pvoigt", 0.06, 910, 5)]),
+    (700, 950, [("gauss", 0.06, 875, 5), ("pvoigt", 0.06, 910, 5),("pvoigt", 0.06,775,5)]),
     (1300, 1650, [("gauss", 0.06, 1380, 10), ("gauss", 0.06, 1580, 10)])
 ]
 
@@ -101,10 +100,10 @@ plt.figure(figsize=(12, 6))
 plt.plot(x_proc_full, y_proc_full, 'k-', label="Processed Spectrum")
 plt.plot(x_proc_full, y_fit_total, 'r--', label="Summed Regional Fit")
 
-for cen in all_peak_centers:
-    plt.axvline(cen, color="gray", linestyle="--", linewidth=1)
-    plt.text(cen, max(y_proc_full)*0.05, f"{cen:.1f}", ha='center', va='bottom',
-             fontsize=9, color='black', fontweight='bold')
+# for cen in all_peak_centers:
+#     plt.axvline(cen, color="gray", linestyle="--", linewidth=1)
+#     plt.text(cen, max(y_proc_full)*0.05, f"{cen:.1f}", ha='center', va='bottom',
+#              fontsize=9, color='black', fontweight='bold')
 
 plt.xlabel("Raman Shift (cm⁻¹)")
 plt.ylabel("Intensity (a.u.)")
