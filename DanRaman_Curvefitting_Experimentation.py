@@ -7,7 +7,7 @@ import ramanspy as rp
 from ramanspy import preprocessing
 
 #Read Data
-data = pd.read_csv("c:/Users/danie/OneDrive/Oxford 2025/03 Data/02 irradiated/Refel_Ne_300_2.5/Dark Grey.csv", encoding="latin1", sep=",")
+data = pd.read_csv("c:/Users/danie/OneDrive/Oxford 2025/03 Data/02 irradiated/Refel_Ne_300_2.5/Dark Grey Focused.csv", encoding="latin1", sep=",")
 data_sorted = data.sort_values(by="#Wave")
 x = data_sorted["#Wave"].values
 y = data_sorted["#Intensity"].values
@@ -150,7 +150,7 @@ for start, end, peak_defs in regions:
         plt.plot(x_proc_full, y_peak, linestyle=':', linewidth=1,
                  label=f'Peak {global_peak_counter} ({shape}, {cen:.1f})')
         global_peak_counter += 1
-        
+
 # Final plot styling
 plt.xlabel("Raman Shift (cm⁻¹)")
 plt.ylabel("Intensity (a.u.)")
