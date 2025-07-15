@@ -75,7 +75,7 @@ for i, file in enumerate(file_paths):
 plt.xlabel("Raman Shift (cm⁻¹)")
 plt.ylabel("Offset Intensity (a.u.)")
 plt.title("Vertically Offset Overlay of Processed Raman Spectra")
-plt.legend()
+#plt.legend()
 plt.grid(True)
 plt.tight_layout()
 plt.show()

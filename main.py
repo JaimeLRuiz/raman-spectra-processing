@@ -50,7 +50,7 @@ def main():
         crop_min=150,
         crop_max=2000,
         sg_window=31,
-        sg_polyorder=2,
+        sg_polyorder=3,
         imodpoly_order=8,
         imodpoly_tol=1e-3,
         imodpoly_max_iter=100,
