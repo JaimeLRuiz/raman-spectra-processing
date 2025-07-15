@@ -53,7 +53,7 @@ def pseudo_voigt(x, amp, cen, wid, eta=0.5):
 regions = [
     (150, 400, [("gauss", 0.06, 200, 5), ("gauss", 0.06, 280, 5)]),
     (500, 600, [("pvoigt", 0.06, 525, 5), ("pvoigt", 0.06, 560, 5)]),
-    (700, 950, [("gauss", 0.06, 875, 5), ("pvoigt", 0.06, 910, 5),("pvoigt", 0.06,775,5)]),
+    (730, 945, [("gauss", 0.06, 875, 5), ("pvoigt", 0.06, 910, 5),("pvoigt", 0.06,775,5)]),
     (1300, 1650, [("gauss", 0.06, 1380, 10), ("gauss", 0.06, 1580, 10)])
 ]
 
@@ -144,7 +144,9 @@ for start, end, peak_defs in regions:
         elif shape == "pvoigt":
             y_peak = pseudo_voigt(x_proc_full, amp, cen, wid)
 
-        plt.plot(x_proc_full, y_peak, linestyle=':', linewidth=1)
+        plt.plot(x_proc_full, y_peak, linestyle=':', linewidth=1,
+         label=f'Peak {i+1} ({shape}, {cen:.1f})')
+
 
 # Final plot styling
 plt.xlabel("Raman Shift (cm⁻¹)")
@@ -158,7 +160,7 @@ plt.show()
 # === Final labeled plot with staggered peak labels ===
 plt.figure(figsize=(12, 6))
 plt.plot(x_proc_full, y_proc_full, color='red', label='Processed Data')
-plt.plot(x_proc_full, y_fit_total, 'r--', label="Summed Regional Fit")
+#plt.plot(x_proc_full, y_fit_total, 'r--', label="Summed Regional Fit")
 
 label_count = 0  # to stagger labels
 
