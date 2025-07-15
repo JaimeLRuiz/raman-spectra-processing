@@ -106,6 +106,9 @@ plt.plot(x_proc_full, y_fit_total, 'r--', label="Summed Regional Fit")
 
 # === Plot individual component peaks again, globally ===
 # Redo loop to overlay components from each region
+global_peak_counter = 1
+
+
 for start, end, peak_defs in regions:
     mask = (x_proc_full >= start) & (x_proc_full <= end)
     x_crop = x_proc_full[mask]
@@ -145,9 +148,9 @@ for start, end, peak_defs in regions:
             y_peak = pseudo_voigt(x_proc_full, amp, cen, wid)
 
         plt.plot(x_proc_full, y_peak, linestyle=':', linewidth=1,
-         label=f'Peak {i+1} ({shape}, {cen:.1f})')
-
-
+                 label=f'Peak {global_peak_counter} ({shape}, {cen:.1f})')
+        global_peak_counter += 1
+        
 # Final plot styling
 plt.xlabel("Raman Shift (cm⁻¹)")
 plt.ylabel("Intensity (a.u.)")
