@@ -60,6 +60,21 @@ def load_processed_spectrum(filepath):
 plt.figure(figsize=(12, 6))
 offset_step = 1.2  # spacing between each curve
 
+import re
+
+def extract_temperature_label(filename):
+    name = os.path.basename(filename)
+
+    match = re.search(r"\b(\d+)[Cc]\b", name)
+    if "RT" in name.upper():
+        return "RT"
+    elif match:
+        temp = match.group(1)
+        return f"{temp} °C"  # Unicode degree symbol
+    else:
+        return ""  # fallback if not found
+
+
 for i, file in enumerate(file_paths):
     folder = os.path.basename(os.path.dirname(file))
     name = os.path.splitext(os.path.basename(file))[0]
@@ -67,10 +82,25 @@ for i, file in enumerate(file_paths):
 
     x, y = load_processed_spectrum(file)
 
+# Filter to only include data where Raman Shift ≤ 2000 cm⁻¹
+    # mask = x <= 2000
+    # x = x[mask]
+    # y = y[mask]
+
+
     # Apply vertical offset to each curve
-    y_offset = y + i * (np.max(y) - np.min(y)) * offset_step
+    y_offset = y + (len(file_paths) - i - 1) * (np.max(y) - np.min(y)) * offset_step
+
 
     plt.plot(x, y_offset, label=label, linewidth=1.5)
+
+# Add temperature annotation just above the curve peak
+    temperature = extract_temperature_label(file)
+    x_pos = 3800  # fixed position near right edge, but inside limit
+    y_pos = np.max(y_offset) - 0.8
+    plt.text(x_pos, y_pos, temperature, ha='right', fontsize=9, fontweight='bold')
+
+
 
 plt.xlabel("Raman Shift (cm⁻¹)")
 plt.ylabel("Offset Intensity (a.u.)")
