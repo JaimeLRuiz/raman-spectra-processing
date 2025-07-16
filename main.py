@@ -12,8 +12,8 @@ from analysis_plotting import plot_and_report
 # Format: (start, end, [ (model, amp, center, width), ... ])
 REGIONS = [
     (440, 610, [("pvoigt", 0.4, 550, 5)]),
-    (690, 1000, [("lorentz", 0.4, 770, 5), ("lorentz",0.4, 820, 5),("gauss", 0.05, 890, 5),("lorentz", 0.05, 930, 5),("lorentz", 0.4, 975, 5)]),
-    (1300, 1700, [("lorentz", 0.4, 1400, 5), ("lorentz",0.4,1600,5)])
+    (650, 1000, [("lorentz", 0.8, 770, 5),("gauss", 0.1, 860, 8),("pvoigt", 0.4, 920, 5)]),
+    (1400, 1500, [("pvoigt", 0.4, 1450, 5)])
 ]
 
 # === File Input Handling ===
