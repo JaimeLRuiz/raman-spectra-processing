@@ -11,7 +11,7 @@ from analysis_plotting import plot_and_report
 # === Region Definitions ===
 # Format: (start, end, [ (model, amp, center, width), ... ])
 REGIONS = [
-    (380, 1000, [("gauss", 0.4, 550, 5),("lorentz", 0.8, 770, 5),("gauss", 0.4, 920, 5)]),
+    (380, 1000, [("gauss", 0.4, 550, 5),("lorentz", 0.8, 770, 5),("lorentz", 0.4, 840, 5)]),
     (1100, 1700, [("gauss", 0.4, 1250, 5),("gauss", 0.4, 1400, 5),("pvoigt", 0.4, 1550, 5)])
 ]
 
