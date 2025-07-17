@@ -12,7 +12,7 @@ from analysis_plotting import plot_and_report
 # Format: (start, end, [ (model, amp, center, width), ... ])
 REGIONS = [
     (400, 650, [("pvoigt", 0.05, 420, 5),("pvoigt", 0.2, 550, 5),("pvoigt", 0.1, 590, 5)]),
-    (650, 1000, [("pvoigt", 0.05, 720, 5), ("lorentz", 1.6, 780, 5), ("pvoigt",0.6, 850, 5),("pvoigt", 0.55, 920, 5),("pvoigt", 0.4, 960, 5),("lorentz", 0.6, 975, 5),]),
+    (650, 1000, [("pvoigt", 0.05, 720, 5),("lorentz", 0.6, 770, 5), ("lorentz", 1, 790, 5), ("pvoigt",0.6, 850, 2),("pvoigt", 0.55, 920, 2),("pvoigt", 0.35, 960, 5),("lorentz", 0.6, 975, 5),]),
     (1300, 1700, [("lorentz", 0.4, 1400, 5), ("lorentz",0.4,1600,5)])
 ]
 
@@ -63,7 +63,7 @@ def main():
     # === Step 2: Region-Based Curve Fitting ===
     # Allow peaks to shift ± this many cm⁻¹ from initial guess
 
-    CENTER_SHIFT_LIMIT = 25
+    CENTER_SHIFT_LIMIT = 35
 
     y_fit_total, fitted_peaks, peak_params = fit_peaks_regionwise(x, y, REGIONS, center_tolerance=CENTER_SHIFT_LIMIT)
 
