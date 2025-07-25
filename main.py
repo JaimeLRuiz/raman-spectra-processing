@@ -47,11 +47,11 @@ def main():
     # === Step 1: Preprocessing ===
     x, y = preprocess(
         input_file,
-        crop_min=150,
+        crop_min=200,
         crop_max=2000,
-        sg_window=31,
-        sg_polyorder=3,
-        imodpoly_order=8,
+        sg_window=11,
+        sg_polyorder=10,
+        imodpoly_order=5,
         imodpoly_tol=1e-3,
         imodpoly_max_iter=100,
         normalisation="vector-0to1",
