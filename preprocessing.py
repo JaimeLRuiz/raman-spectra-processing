@@ -23,7 +23,7 @@ def preprocess(
     normalisation="vector-0to1",
     plot=True,
     save_path=None,
-    alex_data = True
+    alex_data = False
 ):
     """
     Preprocesses a Raman spectrum with denoising, baseline removal, and normalisation.
@@ -37,7 +37,7 @@ def preprocess(
     """
 
     # === Load and clean CSV ===
-    df = pd.read_csv(input_path, delim_whitespace=True, header=None)
+    df = pd.read_csv(input_path, delim_whitespace=False, header=None)
     # df.columns = df.columns.str.strip()
     x_col, y_col = df.columns[:2]
 
@@ -59,6 +59,10 @@ def preprocess(
         x_raw = wavelength_to_shift(x_raw, excitation_nm)
 
     raw_spectrum = rp.Spectrum(y_raw, x_raw)
+
+    # Save raw spectrum as CSV
+    #raw_df = pd.DataFrame({'Wavenumber (cm^-1)': x_raw, 'Intensity (a.u.)': y_raw})
+    #raw_df.to_csv("output/raw_spectrum_Tofix.csv", index=False)
 
 
     # === Apply preprocessing ===

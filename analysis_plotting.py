@@ -5,7 +5,7 @@ import textwrap
 
 
 def plot_and_report(x, y, y_fit_total, fitted_peaks, peak_params,
-                    annotate=False, stagger_labels=True,
+                    annotate=True, stagger_labels=True,
                     font_size=9, label_offset=0.05,
                     show_components=True, save_curve_path=None,
                     save_params_path=None, show=True, show_text_plot=True):

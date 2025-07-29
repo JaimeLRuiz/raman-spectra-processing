@@ -11,9 +11,8 @@ from analysis_plotting import plot_and_report
 # === Region Definitions ===
 # Format: (start, end, [ (model, amp, center, width), ... ])
 REGIONS = [
-    (400, 650, [("voigt", 0.05, 420, 5),("voigt", 0.2, 550, 5),("voigt", 0.1, 590, 5)]),
-    (650, 1000, [("voigt", 0.05, 720, 5),("voigt", 0.6, 770, 5), ("voigt", 1, 790, 5), ("voigt",0.3, 860, 2),("voigt", 0.3, 890, 2),("voigt", 0.3, 960, 5),("voigt", 0.6, 975, 5),]),
-    (1300, 1700, [("lorentz", 0.4, 1370, 5),("lorentz",0.4,1400,5), ("lorentz",0.4,1600,5)])
+    (380, 1700, [("voigt", 0.05, 450, 5),("voigt", 0.2, 560, 5),("voigt", 0.1, 620, 5),("voigt", 0.05, 650, 5), ("voigt", 1, 800, 5), ("voigt",0.3, 870, 2),("voigt", 0.3, 890, 2),("voigt", 0.3, 960, 5),("gauss",0.2,1100,5),("gauss",0.4,1420,5), ("voigt",0.4,1400,5), ("voigt",0.4,1600,5)]),
+    #(1000, 1700, [("gauss",0.2,1100,5),("gauss",0.4,1400,5), ("voigt",0.4,1350,5), ("voigt",0.4,1600,5)])
 ]
 
 # === File Input Handling ===
@@ -55,15 +54,15 @@ def main():
         imodpoly_tol=1e-3,
         imodpoly_max_iter=100,
         normalisation="vector-0to1",
-        plot=False,
+        plot=True,
         save_path=f"output/{filename}_processed.csv",
-        alex_data = True
+        alex_data = False
     )
 
     # === Step 2: Region-Based Curve Fitting ===
     # Allow peaks to shift ± this many cm⁻¹ from initial guess
 
-    CENTER_SHIFT_LIMIT = 35
+    CENTER_SHIFT_LIMIT = 200
 
     y_fit_total, fitted_peaks, peak_params = fit_peaks_regionwise(x, y, REGIONS, center_tolerance=CENTER_SHIFT_LIMIT)
 
