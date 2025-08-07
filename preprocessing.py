@@ -23,7 +23,7 @@ def preprocess(
     normalisation="vector-0to1",
     plot=True,
     save_path=None,
-    alex_data = False
+    alex_data=True
 ):
     """
     Preprocesses a Raman spectrum with denoising, baseline removal, and normalisation.
@@ -37,33 +37,42 @@ def preprocess(
     """
 
     # === Load and clean CSV ===
-    df = pd.read_csv(input_path, delim_whitespace=False, header=None)   #we should use sep='\s+' instead of delim_whitespace
-    # df.columns = df.columns.str.strip()
-    x_col, y_col = df.columns[:2]
+    with open(input_path, 'r') as f:
+        first_line = f.readline()
+        print("📄 First line of file:", first_line.strip())
 
+    try:
+        df = pd.read_csv(input_path, sep=',', header=None)
+    except Exception as e:
+        raise ValueError(f"❌ Failed to read CSV: {e}")
+
+    if df.shape[1] < 2:
+        raise ValueError(f"❌ Expected at least 2 columns in data file, got {df.shape[1]}.")
+    
+    print(df.head())
+
+
+    x_col, y_col = df.columns[:2]
     df[x_col] = pd.to_numeric(df[x_col], errors="coerce")
     df[y_col] = pd.to_numeric(df[y_col], errors="coerce")
     df = df.dropna()
     df = df[(df[x_col] >= crop_min) & (df[x_col] <= crop_max)]
     df = df.sort_values(by=x_col)
 
-    # Check we are not dealing with empty csv / reading it wrong
-    if df.shape[0] == 0:
-        raise ValueError("[!] Loaded CSV is empty. Check delimiter or file format.")
-
     x_raw = df[x_col].values
     y_raw = df[y_col].values
 
+    # Optional: Convert wavelength to Raman shift
     if alex_data:
         excitation_nm = 532
         x_raw = wavelength_to_shift(x_raw, excitation_nm)
 
+    # Sort (again, safe in case conversion shuffled order)
+    sort_idx = np.argsort(x_raw)
+    x_raw = x_raw[sort_idx]
+    y_raw = y_raw[sort_idx]
+
     raw_spectrum = rp.Spectrum(y_raw, x_raw)
-
-    # Save raw spectrum as CSV
-    #raw_df = pd.DataFrame({'Wavenumber (cm^-1)': x_raw, 'Intensity (a.u.)': y_raw})
-    #raw_df.to_csv("output/raw_spectrum_Tofix.csv", index=False)
-
 
     # === Apply preprocessing ===
     denoiser = preprocessing.denoise.SavGol(window_length=sg_window, polyorder=sg_polyorder)
