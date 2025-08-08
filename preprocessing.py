@@ -92,6 +92,10 @@ def preprocess(
         y_scaled = min_max_normalise_array(s_baseline.spectral_data)
         s_processed = rp.Spectrum(y_scaled, s_baseline.spectral_axis)
 
+    elif norm_mode == 'none':  
+        print("No normalisation method will be applied")
+        s_processed = s_baseline
+
     else:
         raise ValueError(f"[!] Unknown normalisation method: {normalisation}")
 
