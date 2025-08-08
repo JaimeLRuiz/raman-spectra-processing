@@ -10,9 +10,10 @@ from preprocessing import preprocess
 from curve_fitting import fit_peaks_regionwise
 from analysis_plotting import plot_and_report
 
-# === Region & Cropping Definitions ===
-cmin = 170
+# === Region, Cropping & Baseline Definitions ===
+cmin = 1000
 cmax = 1800
+baseorder = 1       # Order of baseline removal (1 - linear, 2 - quadratic...)
 
 # Format: (start, end, [ (model, amp, center, width), ... ])
 REGIONS = [(1000, 2100, [("gauss", 0.3, 1080,5), ("lorentz", 2, 1415, 50)])]
@@ -46,11 +47,11 @@ def overlay_multiple_spectra(file_paths, crop_min = cmin, crop_max = cmax, scale
         # Use your existing preprocessing pipeline
         x, y = preprocess(
             input_path=file,
-            crop_min=crop_min,
-            crop_max=crop_max,
+            crop_min=cmin,
+            crop_max=cmax,
             sg_window=11,
             sg_polyorder=10,
-            imodpoly_order=2,
+            imodpoly_order= baseorder,
             imodpoly_tol=1e-3,
             imodpoly_max_iter=100,
             normalisation="vector-0to1",
@@ -105,7 +106,7 @@ def main():
         crop_max=cmax,
         sg_window=11,
         sg_polyorder=10,
-        imodpoly_order=2,
+        imodpoly_order= baseorder,
         imodpoly_tol=1e-3,
         imodpoly_max_iter=100,
         normalisation="vector-0to1",
