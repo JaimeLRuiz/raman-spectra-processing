@@ -7,13 +7,16 @@ from ramanspy import preprocessing
 def min_max_normalise_array(arr):
     return (arr - np.min(arr)) / (np.max(arr) - np.min(arr))
 
-def wavelength_to_shift(lambda_nm, lambda_exc_nm):
+def wavelength_to_shift(lambda_nm, lambda_exc_nm, microm):
     lambda_nm = np.array(lambda_nm, dtype=np.float64)
+    if microm:
+        lambda_exc_nm *= 1000
+        lambda_nm *= 1000
     return 1e7 / lambda_exc_nm - 1e7 / lambda_nm
 
 def preprocess(
     input_path,
-    crop_min=150,
+    crop_min=170,
     crop_max=2000,
     sg_window=11,
     sg_polyorder=3,
@@ -23,7 +26,8 @@ def preprocess(
     normalisation="vector-0to1",
     plot=True,
     save_path=None,
-    alex_data=True
+    alex_data=False,
+    microm = True
 ):
     """
     Preprocesses a Raman spectrum with denoising, baseline removal, and normalisation.
@@ -41,11 +45,14 @@ def preprocess(
     df = pd.read_csv(input_path, delim_whitespace = True, header=None, skiprows=16, engine="python", encoding="latin1")   #we should use sep='\s+' instead of delim_whitespace
     # df.columns = df.columns.str.strip()
     x_col, y_col = df.columns[:2]
+
     df[x_col] = pd.to_numeric(df[x_col], errors="coerce")
     df[y_col] = pd.to_numeric(df[y_col], errors="coerce")
     df = df.dropna()
-    df = df[(df[x_col] >= crop_min) & (df[x_col] <= crop_max)]
-    df = df.sort_values(by=x_col)
+
+        # Check we are not dealing with empty csv / reading it wrong
+    if df.shape[0] == 0:
+        raise ValueError("[!] Loaded CSV is empty. Check delimiter or file format.")
 
     x_raw = df[x_col].values
     y_raw = df[y_col].values
@@ -53,12 +60,16 @@ def preprocess(
     # Optional: Convert wavelength to Raman shift
     if alex_data:
         excitation_nm = 532
-        x_raw = wavelength_to_shift(x_raw, excitation_nm)
+        x_raw = wavelength_to_shift(x_raw, excitation_nm, microm)
+
+    df = df[(df[x_col] >= crop_min) & (df[x_col] <= crop_max)]
+    df = df.sort_values(by=x_col)
 
     # Sort (again, safe in case conversion shuffled order)
     sort_idx = np.argsort(x_raw)
     x_raw = x_raw[sort_idx]
     y_raw = y_raw[sort_idx]
+
 
     raw_spectrum = rp.Spectrum(y_raw, x_raw)
 
