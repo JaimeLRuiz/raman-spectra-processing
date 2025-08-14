@@ -26,8 +26,8 @@ def preprocess(
     normalisation="vector-0to1",
     plot=True,
     save_path=None,
-    alex_data=False,
-    microm = True
+    alex_data=True,
+    microm = False
 ):
     """
     Preprocesses a Raman spectrum with denoising, baseline removal, and normalisation.
@@ -41,8 +41,8 @@ def preprocess(
     """
 
     # === Load and clean CSV ===
-    df = pd.read_csv(input_path, delim_whitespace = True, header=None, skiprows=16, engine="python", encoding="latin1")   #For our annealing data
-    #df = pd.read_csv(input_path, delim_whitespace = False, header=None)   #we should use sep='\s+' instead of delim_whitespace
+    #df = pd.read_csv(input_path, delim_whitespace = True, header=None, skiprows=16, engine="python", encoding="latin1")   #For our annealing data
+    df = pd.read_csv(input_path, delim_whitespace = True, header=None)   #we should use sep='\s+' instead of delim_whitespace
     # df.columns = df.columns.str.strip()
     x_col, y_col = df.columns[:2]
 
