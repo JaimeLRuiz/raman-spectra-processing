@@ -16,6 +16,10 @@ def wavelength_to_shift(lambda_nm, lambda_exc_nm, microm):
 
 def _read_spectrum_table(input_path):
     read_attempts = [
+        {"sep": None, "header": 0, "engine": "python", "encoding": "utf-8-sig"},
+        {"sep": None, "header": None, "engine": "python", "encoding": "utf-8-sig"},
+        {"sep": ",", "header": 0, "encoding": "utf-8-sig"},
+        {"sep": ",", "header": None, "encoding": "utf-8-sig"},
         {"sep": ",", "header": 0},
         {"sep": ",", "header": None},
         {"sep": r"\s+", "header": 0, "engine": "python"},

@@ -1,4 +1,4 @@
-# Multi Spectra Comparison (Already Processed Data)
+# Multi Spectra Comparison
 
 import numpy as np
 import pandas as pd
@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import os
 import argparse
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 
 
 def choose_file_dialog(multiple=True):
@@ -44,21 +44,40 @@ def get_input_files():
     else:
         return list(choose_file_dialog(multiple=True))
 
+def ask_preprocess():
+    root = tk.Tk()
+    root.withdraw()
+    result = messagebox.askyesno(
+        "Preprocessing",
+        "Run files through the preprocessing pipeline before plotting?\n\n"
+        "Yes = denoise, baseline correction, normalise\n"
+        "No  = plot raw data as-is"
+    )
+    root.destroy()
+    return result
+
 # Use this to populate your list of files
 file_paths = get_input_files()
+run_preprocessing = ask_preprocess()
 
 
 def load_processed_spectrum(filepath):
-    data = pd.read_csv(filepath)  # uses headers automatically
-    x = data["Raman Shift (cm-1)"].values
-    y = data["Processed Intensity"].values
+    # Auto-detect separator
+    data = pd.read_csv(filepath, sep=None, engine="python",
+                       header=None, skiprows=0)
+    # If first row is non-numeric, treat it as a header and drop it
+    try:
+        float(str(data.iloc[0, 0]).strip())
+    except ValueError:
+        data = data.iloc[1:].reset_index(drop=True)
+    x = data.iloc[:, 0].astype(float).values
+    y = data.iloc[:, 1].astype(float).values
     return x, y
 
 
 
 # === Plotting ===
 plt.figure(figsize=(12, 6))
-offset_step = 1.2  # spacing between each curve
 
 import re
 
@@ -75,16 +94,35 @@ def extract_temperature_label(filename):
         return ""  # fallback if not found
 
 
+if run_preprocessing:
+    from preprocessing import preprocess
+
 for i, file in enumerate(file_paths):
     folder = os.path.basename(os.path.dirname(file))
     name = os.path.splitext(os.path.basename(file))[0]
     label = f"{folder} {name}"
 
-    x, y = load_processed_spectrum(file)
+    if run_preprocessing:
+        x, y = preprocess(
+            file,
+            crop_min=170, crop_max=2000,
+            sg_window=11, sg_polyorder=10,
+            imodpoly_order=5, imodpoly_tol=1e-3, imodpoly_max_iter=100,
+            normalisation="vector-0to1",
+            plot=False, save_path=None,
+            convert_wavelength_to_shift=False
+        )
+    else:
+        x, y = load_processed_spectrum(file)
 
-    # Apply vertical offset to each curve
+    # Shift to zero-minimum and scale to [0, 1]
+    y = y - y.min()
+    if y.max() > 0:
+        y = y / y.max()
+
+    # Stack at whole-number offsets: bottom spectrum at 0, next at 1, etc.
     offset_index = (len(file_paths) - i - 1)
-    y_offset = y + offset_index * offset_step
+    y_offset = y + offset_index
 
     # Plot the spectrum
     plt.plot(x, y_offset, label=label, linewidth=1.5)
@@ -96,7 +134,7 @@ for i, file in enumerate(file_paths):
         anchor_index = -1  # fallback
 
     y_anchor = y_offset[anchor_index]
-    y_pos = y_anchor + 0.2  # small lift above the line
+    y_pos = y_anchor + 0.05  # small lift above the line
     x_pos = x[anchor_index]
 
     # Extract temperature string for label
@@ -108,7 +146,8 @@ for i, file in enumerate(file_paths):
 
 plt.xlabel("Raman Shift (cm⁻¹)")
 plt.ylabel("Offset Intensity (a.u.)")
-plt.title("Vertically Offset Overlay of Processed Raman Spectra")
+title = "Vertically Offset Overlay of Preprocessed Raman Spectra" if run_preprocessing else "Vertically Offset Overlay of Raw Raman Spectra"
+plt.title(title)
 #plt.legend()
 plt.grid(True)
 plt.tight_layout()
