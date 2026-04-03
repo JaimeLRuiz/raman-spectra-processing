@@ -25,26 +25,34 @@ BASELINE_ORDER = 5
 
 # Format: (start, end, [ (model, amp, center, width), ... ])
 REGIONS = [
-    #(170, 400, [("voigt",0.1,186,10),("voigt",0.1,266,10)]),
-    (170, 1660, [("voigt",0.4,186,10),("voigt",0.4,246,10),("voigt",0.4,266,5),("voigt", 0.1, 435, 5),("voigt", 0.2, 500, 5),("voigt", 0.2, 550, 5),("voigt", 0.1, 660, 1),("gauss",0.5,770,5), ("voigt",0.3, 849, 2),("gauss", 0.3, 870, 10),("lorentz",0.6,1355,2),("lorentz",0.6,1455,2),("lorentz",0.6,1405,2)]),
-    #(1350, 1450, [("lorentz",0.1,1405,2)])
+    (450, 550, [("lorentz", 0.2, 520, 2)]),
+    (560, 580, [("lorentz", 0.05, 570, 1)]),
+    (650, 1160, [("lorentz", 0.6, 760, 2), ("lorentz", 1, 790, 2),("lorentz", 1, 795, 2),("lorentz", 0.3, 960, 2)]),
+    (1350, 1750, [("lorentz",0.1,1500,2),("lorentz",0.1,1700,2)])
 ]
+
 # === File Input Handling ===
 def choose_file_dialog():
     root = tk.Tk()
     root.withdraw()
     return filedialog.askopenfilenames(
         title="Select Raman CSV File(s)",
-        filetypes=[("CSV files", "*.csv")]
+        filetypes=[("Spectrum files", "*.csv *.txt"), ("CSV files", "*.csv"), ("Text files", "*.txt")]
     )
 # === Overlaying Multiple Spectra ===       # Set normalisation to none to compare real relative intensities
 def overlay_multiple_spectra(
     file_paths,
     crop_min=CROP_MIN, crop_max=CROP_MAX,
     scale_unirradiated=False,     # irrelevant with this method, but keep arg for compatibility
-    figsize=None, legend_outside=True
+    figsize=None
 ):
+    PAUL_TOL_MUTED = [
+        "#CC6677", "#332288", "#DDCC77", "#117733",
+        "#88CCEE", "#882255", "#44AA99", "#999933", "#AA4499",
+    ]
+
     fig, ax = plt.subplots(figsize=figsize or PUB_FIGSIZE, dpi=PUB_DPI)
+    ax.set_prop_cycle(color=PAUL_TOL_MUTED)
 
     # 1) Load full + cropped (NO normalisation) to compute ratios
     spectra = []      # [(label, x_crop, y_crop, ratio, cropped_max, y_crop_min), ...]
@@ -109,11 +117,13 @@ def overlay_multiple_spectra(
         denom = (np.max(y_nonneg) if np.max(y_nonneg) > 0 else 1.0)
         y_unit = y_nonneg / denom                     # 0..1, preserves shape
         rel_scale = ratio / max_ratio                 # <= 1
-        y_band = i + y_unit * rel_scale               # sits in [i, i+rel_scale]
+        offset_index = len(spectra) - 1 - i
+        y_band = offset_index + y_unit * rel_scale     # first file at top, last at bottom
 
-        h, = ax.plot(x_crop, y_band, linewidth=1.2, label=label)
+        display_label = label if len(label) <= 40 else label[:37] + "..."
+        h, = ax.plot(x_crop, y_band, linewidth=1.2, label=display_label)
         legend_handles.append(h)
-        legend_labels.append(label)
+        legend_labels.append(display_label)
 
     # 4) Styling + legend outside
     _ = apply_pub_style(
@@ -124,14 +134,12 @@ def overlay_multiple_spectra(
     )
 
     ncol = 1 if len(legend_handles) <= 14 else 2
-    if legend_outside:
-        ax.legend(
-            legend_handles, legend_labels,
-            loc='upper left', bbox_to_anchor=(1.02, 1),
-            borderaxespad=0, fontsize=6, frameon=False, ncol=ncol
-        )
-    else:
-        ax.legend(legend_handles, legend_labels, loc='upper right', fontsize=6, frameon=False, ncol=ncol)
+    ax.legend(
+        legend_handles, legend_labels,
+        loc='upper left', bbox_to_anchor=(1.02, 1),
+        borderaxespad=0, fontsize=7, frameon=False, ncol=ncol
+    )
+    fig.subplots_adjust(right=0.72)
 
     # Lock the y-limits to full integer bands
     top_band = len(spectra)
@@ -151,7 +159,7 @@ def main():
     figsize = (FIG_WIDTH, FIG_HEIGHT)
 
     if isinstance(input_files, (list, tuple)) and len(input_files) > 1:
-        overlay_multiple_spectra(input_files, figsize=figsize, legend_outside=LEGEND_OUTSIDE)
+        overlay_multiple_spectra(input_files, figsize=figsize)
         return
 
     input_file = input_files[0]

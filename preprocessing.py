@@ -14,16 +14,85 @@ def wavelength_to_shift(lambda_nm, lambda_exc_nm, microm):
         lambda_nm *= 1000
     return 1e7 / lambda_exc_nm - 1e7 / lambda_nm
 
+def _find_first_numeric_row(input_path, search_from=0, encoding="utf-8-sig"):
+    """
+    Starting from line `search_from`, return the index of the first line whose
+    first whitespace-separated token parses as a float.  This skips any
+    section markers, column-name rows, or other header text that follow a
+    [Data] block.  Returns None if no such line is found.
+    """
+    try:
+        with open(input_path, "r", encoding=encoding, errors="replace") as f:
+            for i, line in enumerate(f):
+                if i < search_from:
+                    continue
+                token = line.split()[0] if line.split() else ""
+                try:
+                    float(token)
+                    return i
+                except ValueError:
+                    continue
+    except OSError:
+        pass
+    return None
+
+def _find_data_section(input_path, encoding="utf-8-sig"):
+    """
+    Look for a [Data] marker and return the index of the first numeric data
+    row after it.  Falls back to searching the whole file if no marker exists.
+    Returns None if no numeric rows are found.
+    """
+    try:
+        with open(input_path, "r", encoding=encoding, errors="replace") as f:
+            for i, line in enumerate(f):
+                if line.strip().lower() == "[data]":
+                    return _find_first_numeric_row(input_path, search_from=i + 1, encoding=encoding)
+    except OSError:
+        pass
+    return None
+
 def _read_spectrum_table(input_path):
+    # --- Handle files with a [Data] section marker (e.g. WITec exports) ---
+    for enc in ("utf-8-sig", "latin-1"):
+        data_start = _find_data_section(input_path, encoding=enc)
+        if data_start is not None:
+            try:
+                df = pd.read_csv(
+                    input_path,
+                    sep=r"\s+",
+                    engine="python",
+                    skiprows=data_start,
+                    header=None,
+                    encoding=enc,
+                    encoding_errors="replace",
+                )
+                if df.empty or df.shape[1] < 2:
+                    continue
+                # Leading whitespace on data lines causes an all-NaN first column — drop it
+                df = df.dropna(axis=1, how="all")
+                if df.empty or df.shape[1] < 2:
+                    continue
+                xy_df = df.iloc[:, :2].copy()
+                xy_df.iloc[:, 0] = pd.to_numeric(xy_df.iloc[:, 0], errors="coerce")
+                xy_df.iloc[:, 1] = pd.to_numeric(xy_df.iloc[:, 1], errors="coerce")
+                xy_df = xy_df.dropna()
+                if not xy_df.empty:
+                    return (
+                        xy_df.iloc[:, 0].to_numpy(dtype=np.float64),
+                        xy_df.iloc[:, 1].to_numpy(dtype=np.float64),
+                    )
+            except Exception:
+                continue
+
     read_attempts = [
-        {"sep": None, "header": 0, "engine": "python", "encoding": "utf-8-sig"},
-        {"sep": None, "header": None, "engine": "python", "encoding": "utf-8-sig"},
-        {"sep": ",", "header": 0, "encoding": "utf-8-sig"},
-        {"sep": ",", "header": None, "encoding": "utf-8-sig"},
-        {"sep": ",", "header": 0},
-        {"sep": ",", "header": None},
-        {"sep": r"\s+", "header": 0, "engine": "python"},
-        {"sep": r"\s+", "header": None, "engine": "python"},
+        {"sep": None, "header": 0, "engine": "python", "encoding": "utf-8-sig", "encoding_errors": "replace"},
+        {"sep": None, "header": None, "engine": "python", "encoding": "utf-8-sig", "encoding_errors": "replace"},
+        {"sep": ",", "header": 0, "encoding": "utf-8-sig", "encoding_errors": "replace"},
+        {"sep": ",", "header": None, "encoding": "utf-8-sig", "encoding_errors": "replace"},
+        {"sep": ",", "header": 0, "encoding": "latin-1"},
+        {"sep": ",", "header": None, "encoding": "latin-1"},
+        {"sep": r"\s+", "header": 0, "engine": "python", "encoding": "latin-1"},
+        {"sep": r"\s+", "header": None, "engine": "python", "encoding": "latin-1"},
     ]
     known_x_names = {"#wave", "wave", "wavelength", "raman shift", "raman_shift", "wavenumber"}
     known_y_names = {"#intensity", "intensity", "counts", "signal"}
@@ -95,7 +164,7 @@ def preprocess(
     imodpoly_order=5,
     imodpoly_tol=1e-3,
     imodpoly_max_iter=1000,
-    normalisation="vector-0to1",
+    normalisation="none",
     plot=True,
     save_path=None,
     convert_wavelength_to_shift=True,

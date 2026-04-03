@@ -15,12 +15,12 @@ def choose_file_dialog(multiple=True):
     if multiple:
         return filedialog.askopenfilenames(
             title="Select Raman CSV Files",
-            filetypes=[("CSV files", "*.csv")]
+            filetypes=[("Spectrum files", "*.csv *.txt"), ("CSV files", "*.csv"), ("Text files", "*.txt")]
         )
     else:
         return [filedialog.askopenfilename(
             title="Select a Raman CSV File",
-            filetypes=[("CSV files", "*.csv")]
+            filetypes=[("Spectrum files", "*.csv *.txt"), ("CSV files", "*.csv"), ("Text files", "*.txt")]
         )]
 
 def get_input_files():
@@ -35,7 +35,7 @@ def get_input_files():
                 files_in_dir = [
                     os.path.join(path, f)
                     for f in os.listdir(path)
-                    if f.lower().endswith(".csv")
+                    if f.lower().endswith((".csv", ".txt"))
                 ]
                 all_files.extend(files_in_dir)
             else:
@@ -76,8 +76,15 @@ def load_processed_spectrum(filepath):
 
 
 
+# Paul Tol's muted colorblind-friendly palette
+PAUL_TOL_MUTED = [
+    "#CC6677", "#332288", "#DDCC77", "#117733",
+    "#88CCEE", "#882255", "#44AA99", "#999933", "#AA4499",
+]
+
 # === Plotting ===
 plt.figure(figsize=(12, 6))
+plt.gca().set_prop_cycle(color=PAUL_TOL_MUTED)
 
 import re
 
@@ -146,9 +153,9 @@ for i, file in enumerate(file_paths):
 
 plt.xlabel("Raman Shift (cm⁻¹)")
 plt.ylabel("Offset Intensity (a.u.)")
-title = "Vertically Offset Overlay of Preprocessed Raman Spectra" if run_preprocessing else "Vertically Offset Overlay of Raw Raman Spectra"
-plt.title(title)
-#plt.legend()
-plt.grid(True)
+# title = "Vertically Offset Overlay of Preprocessed Raman Spectra" if run_preprocessing else "Vertically Offset Overlay of Raw Raman Spectra"
+# plt.title(title)
+plt.legend()
+# plt.grid(True)
 plt.tight_layout()
 plt.show()
